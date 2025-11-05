@@ -80,11 +80,29 @@ void main() {
     vec2 st = gl_FragCoord.xy / u_resolution.xy;
     vec2 mouse = u_mouse / u_resolution;
 
-    // 滑鼠向右 → 塊變大
-    float scale = mix(20.0, 200.0, mouse.y);
+    // 根據滑鼠控制整體迷彩密度
+    float baseScale = mix(20.0, 200.0, mouse.y);
 
-    vec2 cellUV = cellularID(st * scale) / scale;
-    vec3 color = texture2D(u_tex0, cellUV).rgb;
+    // 三層不同尺度 (小 / 中 / 大)
+    float scales[3];
+    scales[0] = baseScale * 0.5;  // 小斑
+    scales[1] = baseScale * 1.0;  // 中斑
+    scales[2] = baseScale * 2.0;  // 大斑
 
-    gl_FragColor = vec4(color, 1.0);
+    vec3 result = vec3(0.0);
+    float totalWeight = 0.0;
+
+    // 執行多層 Worley + 混色
+    for (int i = 0; i < 3; i++) {
+        float s = scales[i];
+        vec2 uv = cellularID(st * s) / s;     // 分層 Voronoi cell
+        vec3 c = texture2D(u_tex0, uv).rgb;  // 從原迷彩圖取色
+
+        float w = 1.0 / (float(i) + 1.0);  // 大斑權重大，小斑權重小
+        result += c * w;
+        totalWeight += w;
+    }
+
+    result /= totalWeight; // normalize
+    gl_FragColor = vec4(result, 1.0);
 }
