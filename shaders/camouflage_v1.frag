@@ -8,13 +8,15 @@ precision mediump float;
 uniform vec2 u_resolution;
 uniform vec2 u_mouse;
 uniform float u_time;
-uniform sampler2D u_tex0; //data/MonaLisa.jpg
+uniform sampler2D u_tex0; //import picture
 //uniform sampler2D u_tex1;
 
 // Cellular noise ("Worley noise") in 2D in GLSL.
 // Copyright (c) Stefan Gustavson 2011-04-19. All rights reserved.
 // This code is released under the conditions of the MIT license.
 // See LICENSE file for details.
+
+
 
 // Permutation polynomial: (34x^2 + x) mod 289
 vec3 permute(vec3 x) {
@@ -75,13 +77,14 @@ float mouseEffect(vec2 uv, vec2 mouse, float size)
 }
 
 void main() {
-    vec2 st = gl_FragCoord.xy/u_resolution.xy;          //screen coordinate
-    vec2 mouse=u_mouse/u_resolution;                    //[0~1]
-    float breathing=(exp(sin(u_time*2.0*3.14159/5.0)) - 0.36787944)*0.42545906412; 
-    float value=mouseEffect(st,mouse,0.05*breathing+0.1);
-    
-    float sizeBrick=60.0;  //是否＝motionFreq
-    vec2 vo=cellularID(st*sizeBrick)/sizeBrick;
-    vec3 color=texture2D(u_tex0, vo ).rgb;        
-    gl_FragColor = vec4(vec3(color), 1.0);
+    vec2 st = gl_FragCoord.xy / u_resolution.xy;
+    vec2 mouse = u_mouse / u_resolution;
+
+    // 滑鼠向右 → 塊變大
+    float scale = mix(20.0, 200.0, mouse.y);
+
+    vec2 cellUV = cellularID(st * scale) / scale;
+    vec3 color = texture2D(u_tex0, cellUV).rgb;
+
+    gl_FragColor = vec4(color, 1.0);
 }
